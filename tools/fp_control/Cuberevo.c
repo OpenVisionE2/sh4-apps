@@ -56,6 +56,7 @@ static int setDisplayTime(Context_t *context, int on);
 
 #define cVFD_DEVICE "/dev/vfd"
 #define cRTC_OFFSET_FILE "/proc/stb/fp/rtc_offset"
+//#define cRTC_FAN_FILE "/proc/stb/fp/fan"
 #define cEVENT_DEVICE "/dev/input/event0"
 
 #define cMAXCharsCuberevo 14 /* 14seg ->rest is filtered by driver */
@@ -96,13 +97,13 @@ tArgs vCArgs[] =
 	{ "-l", "  --setLed             ", "Args: LED# int    LED#: int=on,off,blink (0,1,2,3)" },
 	{ "-i", "  --setIcon            ", "Args: icon# 1|0   Set an icon on or off" },
 	{ "-b", "  --setBrightness      ", "Arg : 0..7        Set display brightness" },
-	{ "-led", "--setBrightness      ", "Arg : 0..255      Set LED brightness" },
+//	{ "-led", "--setLedBrightness   ", "Arg : 0..255      Set LED brightness" },
 	{ "-w", "  --getWakeupReason    ", "Args: None        Get the wake up reason" },
 	{ "-L", "  --setLight           ", "Arg : 0|1         Set display on/off" },
 	{ "-c", "  --clear              ", "Args: None        Clear display, all icons and LEDs off" },
 	{ "-v", "  --version            ", "Args: None        Get version info from front processor" },
 	{ "-sf", " --setFan             ", "Arg : 0/1         Set fan on/off" },
-	{ "-sr", " --setRF              ", "Arg : 0/1         Set rf modulator on/off" },
+//	{ "-sr", " --setRF              ", "Arg : 0/1         Set rf modulator on/off" },
 	{ "-dt", " --display_time       ", "Arg : 0/1         Set time display on/off" },
 	{ "-tm", " --time_mode          ", "Arg : 0/1         Set 12 or 24 hour time mode" },
 	{ "-V", "  --verbose            ", "Args: None        Verbose operation" },
@@ -135,6 +136,28 @@ static void setMode(int fd)
 		perror("Set compatibility mode");
 	}
 }
+
+char *getModelname(void)
+{
+	const int cSize = 32;
+	int vFd = -1;
+	int vLen = -1;
+	char *vName;
+
+	vFd = open("/proc/stb/info/model", O_RDONLY);
+	vLen = read(vFd, vName, cSize);
+	close(vFd);
+
+	if (vLen > 0)
+	{
+		vName[vLen - 1] = '\0';
+	}
+	else
+	{
+		printf("Problem: cannot determine receiver model.\n");
+	}
+	return vName;
+}		
 
 /* Remark on times:
  *
@@ -688,6 +711,7 @@ static int setLed(Context_t *context, int which, int state)
 	return 0;
 }
 
+#if 0
 static int setRFModulator(Context_t *context, int on)
 {
 	// -sr command
@@ -709,6 +733,7 @@ static int setRFModulator(Context_t *context, int on)
 	}
 	return 0;
 }
+#endif
 
 static int setDisplayTime(Context_t *context, int on)
 {
@@ -729,20 +754,21 @@ static int setFan(Context_t *context, int on)
 {
 	// -sf command
 	struct micom_ioctl_data vData;
-	int version;
 
-	getVersion(context, &version);
-	if (version >= 2)
+	if ((!strncasecmp(boxName, "cuberevo", 8))
+	||  (!strncasecmp(boxName, "cuberevo_9500hd", 15)))
+	{
+		vData.u.fan.on = on;
+		setMode(context->fd);
+		if (ioctl(context->fd, VFDSETFAN, &vData) < 0)
+		{
+			perror("setFan");
+			return -1;
+		}
+	}
+	else
 	{
 		printf("This model cannot control the fan.\n");
-		return 0;
-	}
-	vData.u.fan.on = on;
-	setMode(context->fd);
-	if (ioctl(context->fd, VFDSETFAN, &vData) < 0)
-	{
-		perror("setFan");
-		return -1;
 	}
 	return 0;
 }
@@ -767,25 +793,25 @@ static int setBrightness(Context_t *context, int brightness)
 {
 	// -b command
 	struct micom_ioctl_data vData;
-	int version;
 
-	getVersion(context, &version);
-	if (version >= 2)
+	if ((!strncasecmp(boxName, "cuberevo_mini_fta", 17))
+	||  (!strncasecmp(boxName, "cuberevo_250hd", 14)))
 	{
 		printf("This model cannot control display brightness.\n");
-		return 0;
 	}
-	if (brightness < 0 || brightness > 7)
+	else
 	{
-		return -1;
-	}
-	vData.u.brightness.level = brightness;
-	setMode(context->fd);
-	printf("%d\n", context->fd);
-	if (ioctl(context->fd, VFDBRIGHTNESS, &vData) < 0)
-	{
-		perror("setBrightness");
-		return -1;
+		if (brightness < 0 || brightness > 7)
+		{
+			return -1;
+		}
+		vData.u.brightness.level = brightness;
+		setMode(context->fd);
+		if (ioctl(context->fd, VFDBRIGHTNESS, &vData) < 0)
+		{
+			perror("setBrightness");
+			return -1;
+		}
 	}
 	return 0;
 }
@@ -806,22 +832,14 @@ static int Clear(Context_t *context)
 
 static int setLight(Context_t *context, int on)
 {
-	// -L command, FIXME: add models that cannot control brightness in micom and use IOCTL
-	int version;
+	// -L command
+	struct vfd_ioctl_data data;
 
-	getVersion(context, &version);
-	if (version >= 2)
+	data.start = on;
+	if (ioctl(context->fd, VFDDISPLAYWRITEONOFF, &data) < 0)
 	{
-		printf("Command not yet supported on this model.\n");
-		return 0;
-	}
-	if (on)
-	{
-		setBrightness(context, 7);
-	}
-	else
-	{
-		setBrightness(context, 0);
+		perror("Clear");
+		return -1;
 	}
 	return 0;
 }
@@ -857,7 +875,7 @@ static int getWakeupReason(Context_t *context, eWakeupReason *reason)
 static int getVersion(Context_t *context, int *version)
 {
 	//-v command
-	/* Version: 0 = 12 char VFD, 1 = 13 char VFD, 2 = 14 char VFD, 3 = 4 char LED */
+	/* Version: 6XX = LED, 7XX = 13 char VFD or 12 char VFD, 8XX = 14 char VFD,  */
 	struct micom_ioctl_data micom;
 
 	/* front controller version */
@@ -867,7 +885,6 @@ static int getVersion(Context_t *context, int *version)
 		return -1;
 	}
 	*version = micom.u.version.version;
-//	printf("micom version = %d\n", micom.u.version.version);
 	return 0;
 }
 
@@ -886,6 +903,7 @@ static int setTimeMode(Context_t *context, int twentyFour)
 	return 0;
 }
 
+#if 0
 static int setLedBrightness(Context_t *context, int brightness)
 {
 	// -led command, not tested
@@ -893,7 +911,7 @@ static int setLedBrightness(Context_t *context, int brightness)
 	int version;
 
 	getVersion(context, &version);
-	if (version >= 2)
+	if (version < 700)
 	{
 		printf("This model cannot control LED brightness.\n");
 		return 0;
@@ -913,6 +931,7 @@ static int setLedBrightness(Context_t *context, int brightness)
 	}
 	return 0;
 }
+#endif
 
 #if defined MODEL_SPECIFIC
 static int modelSpecific(Context_t *context, char len, unsigned char *data)
@@ -988,9 +1007,9 @@ Model_t Cuberevo_model =
 	.SetBrightness    = setBrightness,
 	.GetWakeupReason  = getWakeupReason,
 	.SetLight         = setLight,
-	.SetLedBrightness = setLedBrightness,
+	.SetLedBrightness = NULL, // setLedBrightness,
 	.GetVersion       = getVersion,
-	.SetRF            = setRFModulator,
+	.SetRF            = NULL, // setRFModulator,
 	.SetFan           = setFan,
 	.SetDisplayTime   = setDisplayTime,
 	.SetTimeMode      = setTimeMode,

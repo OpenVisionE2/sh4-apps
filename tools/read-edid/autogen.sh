@@ -1,6 +1,6 @@
 #!/bin/sh
 
-package="tools-stapi"
+package="tools-read-edid"
 
 srcdir=`dirname $0`
 test -z "$srcdir" && srcdir=.
