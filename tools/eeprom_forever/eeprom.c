@@ -49,7 +49,7 @@
 #define CFG_EEPROM_ADDR  0x57
 #define CFG_EEPROM_SIZE  256
 
-#define EEPROM_WRITE
+//#define EEPROM_WRITE
 #if defined EEPROM_WRITE
 //#define CFG_EEPROM_PAGE_WRITE_DELAY_MS	11	/* 10ms. but give more */
 //#define CFG_EEPROM_PAGE_WRITE_BITS 4
@@ -418,7 +418,7 @@ int Read_Ethaddr(unsigned char *str)
 
 	if (!Nand_Emul_eeprom_read(EEPROM_ETHADDR_OFFSET, mac, 6))
 	{
-//		sprintf((char *)str, (const char *)env_getcommand(e_mac_str), mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+		sprintf((char *)str, (const char *)env_getcommand(e_mac_str), mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 	}
 	else
 	{
