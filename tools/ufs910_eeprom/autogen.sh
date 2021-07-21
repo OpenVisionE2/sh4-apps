@@ -1,6 +1,6 @@
 #!/bin/sh
 
-package="tools-stapi"
+package="tools-eeprom-ufs910"
 
 srcdir=`dirname $0`
 test -z "$srcdir" && srcdir=.
