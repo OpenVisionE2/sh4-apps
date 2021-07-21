@@ -418,7 +418,7 @@ int Read_Ethaddr(unsigned char *str)
 
 	if (!Nand_Emul_eeprom_read(EEPROM_ETHADDR_OFFSET, mac, 6))
 	{
-		sprintf((char *)str, (const char *)env_getcommand(e_ethaddr), mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+//		sprintf((char *)str, (const char *)env_getcommand(e_mac_str), mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 	}
 	else
 	{
