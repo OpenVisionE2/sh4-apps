@@ -1,4 +1,4 @@
-AC_INIT([eeprom_ufs910],[1.0],[],[eeprom_ufs910])
+AC_INIT([eeprom_forever],[1.0],[],[eeprom_forever])
 AM_INIT_AUTOMAKE
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 m4_ifdef([LT_INIT], [LT_INIT], [AC_PROG_LIBTOOL])
