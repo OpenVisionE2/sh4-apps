@@ -49,7 +49,7 @@
 #define CFG_EEPROM_ADDR  0x57
 #define CFG_EEPROM_SIZE  256
 
-//#define EEPROM_WRITE
+#define EEPROM_WRITE
 #if defined EEPROM_WRITE
 //#define CFG_EEPROM_PAGE_WRITE_DELAY_MS	11	/* 10ms. but give more */
 //#define CFG_EEPROM_PAGE_WRITE_BITS 4
